@@ -1,26 +1,42 @@
 mod helpers;
 
 use helpers::{FILENAME, calculate_distances, download_csv_if_needed};
+use log::{debug, error, info};
 use std::env;
 
 async fn proccess_user_input() -> Result<(f32, f32), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() != 4 {
+        error!("Incorrect number of arguments provided");
         eprintln!(
-            "Usage: {} <user x coordinate> <user y coordinate> <shop data url>",
+            "Usage: {} <user y coordinate> <user x coordinate> <shop data url>",
+            args[0]
+        );
+        eprintln!("\nExample:");
+        eprintln!(
+            "  {} 47.6 -122.4 https://example.com/coffee_shops.csv",
             args[0]
         );
         std::process::exit(1);
     }
 
-    let y: f32 = args[1]
-        .parse()
-        .expect("Invalid x coordinate: must be a number");
-    let x: f32 = args[2]
-        .parse()
-        .expect("Invalid y coordinate: must be a number");
+    let y: f32 = args[1].parse().map_err(|_| {
+        format!(
+            "Invalid y coordinate '{}': must be a valid floating-point number (e.g., 47.6)",
+            args[1]
+        )
+    })?;
+    let x: f32 = args[2].parse().map_err(|_| {
+        format!(
+            "Invalid x coordinate '{}': must be a valid floating-point number (e.g., -122.4)",
+            args[2]
+        )
+    })?;
     let shop_data_url = &args[3];
+
+    info!("User coordinates: y={}, x={}", y, x);
+    info!("Data source URL: {}", shop_data_url);
 
     download_csv_if_needed(shop_data_url, FILENAME).await?;
 
@@ -29,21 +45,48 @@ async fn proccess_user_input() -> Result<(f32, f32), Box<dyn std::error::Error>>
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let (y, x) = proccess_user_input().await?;
+    // Initialize logger (set RUST_LOG environment variable to control level)
+    // Example: RUST_LOG=debug cargo run -- 47.6 -122.4 https://raw.githubusercontent.com/Agilefreaks/test_oop/master/coffee_shops.csv
+    env_logger::init();
 
-    let mut distances = calculate_distances(y, x, None, FILENAME)?;
+    info!("Starting coffee shop finder application");
 
-    // Debug: print all distances before sorting
-    // println!("\nAll distances (before sorting):");
-    // for (name, distance) in &distances {
-    //     println!("{},{:.4}", name, distance);
-    // }
+    let (y, x) = match proccess_user_input().await {
+        Ok(coords) => coords,
+        Err(e) => {
+            error!("Failed to process user input: {}", e);
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        }
+    };
 
-    distances.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+    let mut shops = match calculate_distances(y, x, None, FILENAME) {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to calculate distances: {}", e);
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        }
+    };
 
-    for (name, distance) in distances.iter().take(3) {
-        println!("{},{:.4}", name, distance);
+    if shops.is_empty() {
+        error!("No coffee shops found");
+        eprintln!("Error: No valid coffee shops found in the data file");
+        std::process::exit(1);
     }
 
+    debug!("Sorting {} coffee shops by distance", shops.len());
+    shops.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap());
+
+    info!(
+        "Found {} coffee shops, displaying top 3 closest",
+        shops.len()
+    );
+
+    for shop in shops.iter().take(3) {
+        println!("{},{:.4}", shop.name, shop.distance);
+    }
+
+    info!("Application completed successfully");
     Ok(())
 }
