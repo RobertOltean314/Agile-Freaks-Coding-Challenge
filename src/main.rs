@@ -1,6 +1,4 @@
-mod helpers;
-
-use helpers::{FILENAME, calculate_distances, download_csv_if_needed};
+use af_coding_challenge::helpers::{FILENAME, calculate_distances, download_csv_if_needed};
 use log::{debug, error, info};
 use std::env;
 
@@ -78,12 +76,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     debug!("Sorting {} coffee shops by distance", shops.len());
     shops.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap());
 
-    info!(
-        "Found {} coffee shops, displaying top 3 closest",
-        shops.len()
-    );
+    let num_to_display = shops.len().min(3);
 
-    for shop in shops.iter().take(3) {
+    if shops.len() < 3 {
+        info!(
+            "Found {} coffee shop(s), displaying all (fewer than 3 available)",
+            shops.len()
+        );
+    } else {
+        info!(
+            "Found {} coffee shops, displaying top 3 closest",
+            shops.len()
+        );
+    }
+
+    for shop in shops.iter().take(num_to_display) {
         println!("{},{:.4}", shop.name, shop.distance);
     }
 
