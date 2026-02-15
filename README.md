@@ -1,46 +1,143 @@
-# Agile-Freaks-Coding-Challenge
+# Coffee Shop Finder - Usage Guide
 
-## Overview
+A Rust application that finds the three closest coffee shops to a given location.
 
-You have been hired by a company that builds an app for coffee addicts. You are
-responsible for taking the user&#39;s location and returning a list of the three closest
-coffee shops.
+## Prerequisites
 
-## Input
+- Rust and Cargo installed
 
-The coffee shop list is a comma separated file with rows of the following form:
-`Name,Y Coordinate,X Coordinate`
-The quality of data in this list of coffee shops may vary. Malformed entries should
-cause the
-program to exit appropriately.
-Your program will be executed directly from the command line and will be provided
-three
-arguments in the following order:
-`&lt;user x coordinate&gt; &lt;user y coordinate&gt; &lt;shop data url&gt;`
-Notice that the data file will be read from an network location (ex:
-https://raw.githubusercontent.com/Agilefreaks/test_oop/master/coffee_shops.csv)
+## Building the Project
 
-## Output
+```bash
+cargo build --release
+```
 
-Write a program that takes the user&#39;s coordinates encoded as listed above and prints
-out a
-newlineseparated list of the three closest coffee shops (including distance from the
-user) in
-order of closest to farthest. These distances should be rounded to four decimal
-places.
-Assume all coordinates lie on a plane.
-The output should be very simple no UI is required.
+## Running the Program
 
-## Example
+### Basic Usage (No Logs)
 
-Using the
-https://raw.githubusercontent.com/Agilefreaks/test_oop/master/coffee_shops.csv
-**Input**
-`47.6 -122.4 coffee_shops.csv`
-**Expected output**
+```bash
+cargo run -- <y_coordinate> <x_coordinate> <csv_url>
+```
+
+**Example:**
+
+```bash
+cargo run -- 47.6 -122.4 https://raw.githubusercontent.com/Agilefreaks/test_oop/master/coffee_shops.csv
+```
+
+### With Logging
+
+Use the `RUST_LOG` environment variable to enable different log levels:
+
+**Info level (recommended):**
+
+```bash
+RUST_LOG=info cargo run -- 47.6 -122.4 https://raw.githubusercontent.com/Agilefreaks/test_oop/master/coffee_shops.csv
+```
+
+**Debug level (verbose):**
+
+```bash
+RUST_LOG=debug cargo run -- 47.6 -122.4 https://raw.githubusercontent.com/Agilefreaks/test_oop/master/coffee_shops.csv
+```
+
+**Error level only:**
+
+```bash
+RUST_LOG=error cargo run -- 47.6 -122.4 https://raw.githubusercontent.com/Agilefreaks/test_oop/master/coffee_shops.csv
+```
+
+## Expected Output
+
+### Without Logging
 
 ```
 Starbucks Seattle2,0.0645
 Starbucks Seattle,0.0861
 Starbucks SF,10.0793
+```
+
+### With Info Logging
+
+```
+[2026-02-15T10:30:45Z INFO  af_coding_challenge] Starting coffee shop finder application
+[2026-02-15T10:30:45Z INFO  af_coding_challenge] User coordinates: y=47.6, x=-122.4
+[2026-02-15T10:30:45Z INFO  af_coding_challenge] Data source URL: https://raw.githubusercontent.com/Agilefreaks/test_oop/master/coffee_shops.csv
+[2026-02-15T10:30:45Z INFO  af_coding_challenge::helpers] File 'coffee_shops.csv' already exists, skipping download
+[2026-02-15T10:30:45Z INFO  af_coding_challenge::helpers] Processing 6 coffee shop records
+[2026-02-15T10:30:45Z INFO  af_coding_challenge::helpers] Successfully calculated distances for 6 coffee shops
+[2026-02-15T10:30:45Z INFO  af_coding_challenge] Found 6 coffee shops, displaying top 3 closest
+Starbucks Seattle2,0.0645
+Starbucks Seattle,0.0861
+Starbucks SF,10.0793
+[2026-02-15T10:30:45Z INFO  af_coding_challenge] Application completed successfully
+```
+
+### With Debug Logging
+
+Includes all info-level logs plus detailed distance calculations for each coffee shop.
+
+## Input Format
+
+- **Y Coordinate**: Latitude (e.g., 47.6)
+- **X Coordinate**: Longitude (e.g., -122.4)
+- **CSV URL**: Network location of the coffee shop data file
+
+## Output Format
+
+The program outputs three lines, each containing:
+
+```
+<coffee_shop_name>,<distance>
+```
+
+Where:
+
+- `coffee_shop_name` is the name from the CSV file
+- `distance` is the Euclidean distance rounded to 4 decimal places
+
+## Testing
+
+Run unit tests:
+
+```bash
+cargo test
+```
+
+Run unit tests with output:
+
+```bash
+cargo test -- --nocapture
+```
+
+Run integration tests only:
+
+```bash
+cargo test --test integration_test
+```
+
+## Error Handling
+
+The program will exit with an error message if:
+
+- Incorrect number of arguments provided
+- Invalid coordinates (non-numeric values)
+- Network errors (unable to download file)
+- Malformed CSV entries (missing or invalid data)
+- File read/write errors
+
+## CSV File Format
+
+The CSV file should contain comma-separated values with no header:
+
+```
+Name,Y Coordinate,X Coordinate
+```
+
+**Example:**
+
+```
+Starbucks Seattle,47.5809,-122.3160
+Starbucks SF,37.5209,-122.3340
 ```
